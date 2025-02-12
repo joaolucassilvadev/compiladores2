@@ -4,7 +4,7 @@ from CodeWriter import CodeWriter
 
 def main():
     if len(sys.argv) != 2:
-        print("Uso: python VMTranslator.py [arquivo.vm]")
+        print("Uso: python3 VMTranslator.py [arquivo.vm]")
         return
 
     input_path = sys.argv[1]

@@ -3,6 +3,7 @@ class CodeWriter:
         """Abre o arquivo de saída para escrita"""
         self.file = open(output_file, "w")
         self.label_counter = 0  # Para rótulos únicos
+        self.function_name = ""
 
     def writeArithmetic(self, command):
         """Escreve o código Assembly para operações aritméticas e lógicas"""
@@ -37,28 +38,41 @@ class CodeWriter:
                 self.file.write(
                     f"@{index}\nD=A\n@{segment_map[segment]}\nA=M+D\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n"
                 )
-            elif segment == "static":
-                self.file.write(f"@Foo.{index}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n")
-            elif segment == "temp":
-                self.file.write(f"@{5 + index}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n")
-            elif segment == "pointer":
-                pointer_map = {0: "THIS", 1: "THAT"}
-                self.file.write(f"@{pointer_map[index]}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n")
 
-        elif command == "C_POP":
-            if segment in ["local", "argument", "this", "that"]:
-                segment_map = {"local": "LCL", "argument": "ARG", "this": "THIS", "that": "THAT"}
-                self.file.write(
-                    f"@{index}\nD=A\n@{segment_map[segment]}\nD=M+D\n@R13\nM=D\n"
-                    "@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D\n"
-                )
-            elif segment == "static":
-                self.file.write(f"@SP\nAM=M-1\nD=M\n@Foo.{index}\nM=D\n")
-            elif segment == "temp":
-                self.file.write(f"@SP\nAM=M-1\nD=M\n@{5 + index}\nM=D\n")
-            elif segment == "pointer":
-                pointer_map = {0: "THIS", 1: "THAT"}
-                self.file.write(f"@SP\nAM=M-1\nD=M\n@{pointer_map[index]}\nM=D\n")
+    def writeLabel(self, label):
+        """Escreve um rótulo"""
+        self.file.write(f"({self.function_name}${label})\n")
+
+    def writeGoto(self, label):
+        """Escreve um salto incondicional"""
+        self.file.write(f"@{self.function_name}${label}\n0;JMP\n")
+
+    def writeIf(self, label):
+        """Escreve um salto condicional"""
+        self.file.write("@SP\nAM=M-1\nD=M\n")
+        self.file.write(f"@{self.function_name}${label}\nD;JNE\n")
+
+    def writeFunction(self, function_name, num_locals):
+        """Escreve a definição de uma função"""
+        self.function_name = function_name
+        self.file.write(f"({function_name})\n")
+        for _ in range(num_locals):
+            self.file.write("@SP\nA=M\nM=0\n@SP\nM=M+1\n")
+
+    def writeCall(self, function_name, num_args):
+        """Escreve a chamada de uma função"""
+        return_label = f"{function_name}$ret.{self.label_counter}"
+        self.label_counter += 1
+        self.file.write(f"@{return_label}\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n")
+        self.file.write(f"@{function_name}\n0;JMP\n({return_label})\n")
+
+    def writeReturn(self):
+        """Escreve o retorno de uma função"""
+        self.file.write("@LCL\nD=M\n@endFrame\nM=D\n")
+        self.file.write("@5\nD=A\n@endFrame\nA=M-D\nD=M\n@retAddr\nM=D\n")
+        self.file.write("@SP\nAM=M-1\nD=M\n@ARG\nA=M\nM=D\n")
+        self.file.write("@ARG\nD=M+1\n@SP\nM=D\n")
+        self.file.write("@retAddr\nA=M\n0;JMP\n")
 
     def close(self):
         """Fecha o arquivo"""

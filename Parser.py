@@ -24,6 +24,18 @@ class Parser:
             return "C_POP"
         elif self.current_command in ["add", "sub", "neg", "eq", "gt", "lt", "and", "or", "not"]:
             return "C_ARITHMETIC"
+        elif self.current_command.startswith("label"):
+            return "C_LABEL"
+        elif self.current_command.startswith("goto"):
+            return "C_GOTO"
+        elif self.current_command.startswith("if-goto"):
+            return "C_IF"
+        elif self.current_command.startswith("function"):
+            return "C_FUNCTION"
+        elif self.current_command.startswith("call"):
+            return "C_CALL"
+        elif self.current_command.startswith("return"):
+            return "C_RETURN"
         else:
             return "C_UNKNOWN"
 
@@ -34,5 +46,5 @@ class Parser:
         return self.current_command.split()[1]
 
     def arg2(self):
-        """Retorna o segundo argumento do comando (somente para push/pop)"""
-        return int(self.current_command.split()[2]) if self.commandType() in ["C_PUSH", "C_POP"] else None
+        """Retorna o segundo argumento do comando (somente para push/pop/function/call)"""
+        return int(self.current_command.split()[2]) if self.commandType() in ["C_PUSH", "C_POP", "C_FUNCTION", "C_CALL"] else None
