@@ -1,50 +1,66 @@
-class Parser:
-    def __init__(self, filename):
-        """Abre o arquivo e lê todas as linhas, removendo comentários e espaços extras"""
-        with open(filename, "r") as file:
-            self.lines = [line.split("//")[0].strip() for line in file.readlines()]
-        self.lines = [line for line in self.lines if line]  # Remove linhas vazias
-        self.current_command = None
-        self.index = -1
+import re
+from command import (
+    Return,
+    Arithmetic,
+    Label,
+    Goto,
+    IfGoto,
+    Push,
+    Pop,
+    Function,
+    CallFunction,
+    UndefinedCommand,
+)
 
-    def hasMoreCommands(self):
-        """Retorna True se ainda houver comandos a serem processados"""
-        return self.index < len(self.lines) - 1
+class Parser:
+    def __init__(self, fname):
+        self.tokens = []
+        self.position = 0
+        self.curr_token = ""
+        self._tokenize_file(fname)
+
+    def _tokenize_file(self, fname):
+        with open(fname, 'r') as file:
+            code = file.read()
+        code_proc = re.sub(r'//.*', '', code)
+        self.tokens = re.findall(r'[a-zA-Z][_a-zA-Z0-9./-]*|0|[1-9][0-9]*', code_proc)
+
+    def has_more_commands(self):
+        return self.position < len(self.tokens)
 
     def advance(self):
-        """Lê o próximo comando"""
-        self.index += 1
-        self.current_command = self.lines[self.index]
+        self.curr_token = self.tokens[self.position]
+        self.position += 1
 
-    def commandType(self):
-        """Retorna o tipo do comando"""
-        if self.current_command.startswith("push"):
-            return "C_PUSH"
-        elif self.current_command.startswith("pop"):
-            return "C_POP"
-        elif self.current_command in ["add", "sub", "neg", "eq", "gt", "lt", "and", "or", "not"]:
-            return "C_ARITHMETIC"
-        elif self.current_command.startswith("label"):
-            return "C_LABEL"
-        elif self.current_command.startswith("goto"):
-            return "C_GOTO"
-        elif self.current_command.startswith("if-goto"):
-            return "C_IF"
-        elif self.current_command.startswith("function"):
-            return "C_FUNCTION"
-        elif self.current_command.startswith("call"):
-            return "C_CALL"
-        elif self.current_command.startswith("return"):
-            return "C_RETURN"
-        else:
-            return "C_UNKNOWN"
+    def next_command(self):
+        self.advance()
+        if self.curr_token == "return":
+            return Return()
+        elif self.curr_token in {"add", "sub", "neg", "eq", "gt", "lt", "and", "or", "not"}:
+            return Arithmetic(name=self.curr_token)
+        elif self.curr_token in {"label", "if-goto", "goto"}:
+            cmd = self.curr_token
+            self.advance()
+            arg1 = self.curr_token
+            if cmd == "label":
+                return Label(name=arg1)
+            elif cmd == "goto":
+                return Goto(label=arg1)
+            elif cmd == "if-goto":
+                return IFGoto(label=arg1)
+        elif self.curr_token in {"push", "pop", "function", "call"}:
+            cmd = self.curr_token
+            self.advance()
+            arg1 = self.curr_token
+            self.advance()
+            arg2 = int(self.curr_token)
+            if cmd == "push":
+                return Push(segment=arg1, index=arg2)
+            elif cmd == "pop":
+                return Pop(segment=arg1, index=arg2)
+            elif cmd == "function":
+                return Function(name=arg1, vars=arg2)
+            elif cmd == "call":
+                return CallFunction(func_name=arg1, args=arg2)
+        return UndefinedCommand()
 
-    def arg1(self):
-        """Retorna o primeiro argumento do comando"""
-        if self.commandType() == "C_ARITHMETIC":
-            return self.current_command
-        return self.current_command.split()[1]
-
-    def arg2(self):
-        """Retorna o segundo argumento do comando (somente para push/pop/function/call)"""
-        return int(self.current_command.split()[2]) if self.commandType() in ["C_PUSH", "C_POP", "C_FUNCTION", "C_CALL"] else None
