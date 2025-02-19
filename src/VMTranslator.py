@@ -3,28 +3,20 @@ from Parser import Parser
 from CodeWriter import CodeWriter
 
 class VMTranslator:
-    def __init__(self, vm_file, asm_file):
-        self.vm_file = vm_file
-        self.asm_file = asm_file
-        self.parser = Parser(vm_file)
-
-        self.asm_file_obj = open(self.asm_file, 'w')
-        self.code_writer = CodeWriter(self.asm_file_obj)
+    def __init__(self, input_file):
+        self.input_file = input_file
+        self.output_file = input_file.replace(".vm", ".asm")
 
     def translate(self):
-        while self.parser.has_more_commands():
-            command = self.parser.advance()
-            if command:
-                self.code_writer.write(command)
-
-        self.asm_file_obj.close()
-
-def main():
-    vm_file = sys.argv[1]
-    asm_file = vm_file.replace('.vm', '.asm')
-
-    translator = VMTranslator(vm_file, asm_file)
-    translator.translate()
+        parser = Parser(self.input_file)
+        with open(self.output_file, "w") as output:
+            code_writer = CodeWriter(output)
+            
+            while parser.has_more_commands():
+                command, arg1, arg2 = parser.advance()
+                code_writer.write(command, arg1, arg2)
 
 if __name__ == "__main__":
-    main()
+    input_file = sys.argv[1]
+    translator = VMTranslator(input_file)
+    translator.translate()

@@ -1,4 +1,4 @@
-@7
+@6
 D=A
 @SP
 A=M
@@ -12,9 +12,17 @@ A=M
 M=D
 @SP
 M=M+1
+@23
+D=A
 @SP
-M=M-1
 A=M
-D=M
-A=A-1
-M=D+M
+M=D
+@SP
+M=M+1
+@15
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
