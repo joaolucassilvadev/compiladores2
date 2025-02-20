@@ -1,5 +1,3 @@
-# compiladores2
-
 # Compiladores2
 
 Este repositório implementa um tradutor de arquivos `.vm` para `.asm` como parte do projeto Nand2Tetris. O tradutor converte códigos da linguagem de máquina virtual (VM) para códigos em Assembly do Hack Computer.
