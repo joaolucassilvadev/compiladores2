@@ -34,6 +34,10 @@ class CodeWriter:
             asm_code = f"@SP\nAM=M-1\nD=M\n@{arg1}\nD;JGT\n"
         elif command == "goto":
             asm_code = f"@{arg1}\n0;JMP\n"
+        elif command == "function":
+            asm_code = self.write_function(arg1, int(arg2))
+        elif command == "return":
+            asm_code = self.write_return()
 
         self.output_file.write(asm_code)
 
@@ -161,3 +165,20 @@ M=D
 @SP
 M=M+1
 """
+    
+    def write_function(self, function_name, num_locals):
+        asm_code = f"({function_name})\n"
+        for _ in range(num_locals):
+            asm_code += "@0\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n"
+        return asm_code
+
+    def write_return(self):
+        return ("@LCL\nD=M\n@R13\nM=D\n"
+                "@5\nA=D-A\nD=M\n@R14\nM=D\n"
+                "@SP\nAM=M-1\nD=M\n@ARG\nA=M\nM=D\n"
+                "@ARG\nD=M+1\n@SP\nM=D\n"
+                "@R13\nAM=M-1\nD=M\n@THAT\nM=D\n"
+                "@R13\nAM=M-1\nD=M\n@THIS\nM=D\n"
+                "@R13\nAM=M-1\nD=M\n@ARG\nM=D\n"
+                "@R13\nAM=M-1\nD=M\n@LCL\nM=D\n"
+                "@R14\nA=M\n0;JMP\n")
